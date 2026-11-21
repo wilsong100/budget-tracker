@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 // End-to-end tests run against the built web app, served at /budget-planner/ as on the site.
 // Every engine runs every test: the save and sync promises have to hold everywhere.
 const PORT = 4173;
+export const HARNESS_PORT = 4174;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -23,9 +24,17 @@ export default defineConfig({
     { name: 'android', use: { ...devices['Pixel 7'] } },
     { name: 'iphone', use: { ...devices['iPhone 15'] } },
   ],
-  webServer: {
-    command: `npm run build:web && npm run build:offline && npx vite preview --mode web --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}/budget-planner/`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: `npm run build:web && npm run build:offline && npx vite preview --mode web --port ${PORT} --strictPort`,
+      url: `http://localhost:${PORT}/budget-planner/`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      // Test pages that are never published (dev/), e.g. the storage harness.
+      command: `npm run build:harness && npx vite preview --mode harness --port ${HARNESS_PORT} --strictPort`,
+      url: `http://localhost:${HARNESS_PORT}/budget-planner/dev/storage-harness.html`,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

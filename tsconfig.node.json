@@ -15,7 +15,7 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   },
-  "include": ["e2e", "*.config.ts"]
+  "include": ["e2e", "*.config.ts", "src/**/*.test.ts", "src/**/*.test.tsx"]
 }
