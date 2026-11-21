@@ -46,6 +46,20 @@ export default defineConfig(({ mode }): UserConfig => {
     };
   }
 
+  if (mode === 'harness') {
+    // Test pages for Playwright and for looking at by hand. Never published.
+    return {
+      base: WEB_BASE,
+      publicDir: false,
+      plugins: [preact()],
+      build: {
+        outDir: 'dist/harness',
+        emptyOutDir: true,
+        rollupOptions: { input: { storage: 'dev/storage-harness.html' } },
+      },
+    };
+  }
+
   // web, development and test
   return {
     base: WEB_BASE,

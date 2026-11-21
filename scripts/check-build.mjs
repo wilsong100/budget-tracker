@@ -41,6 +41,16 @@ for (const dir of ['dist/web', 'dist/offline']) {
   }
 }
 
+// Test pages under dev/ are built only in harness mode and must never be published.
+for (const dir of ['dist/web', 'dist/offline']) {
+  if (!existsSync(dir)) continue;
+  for (const file of walk(dir)) {
+    if (/harness/i.test(file) || (/\.(js|html)$/.test(file) && readFileSync(file, 'utf8').includes('window.harness'))) {
+      fail(`${file} contains a test page`);
+    }
+  }
+}
+
 if (failures.length) {
   console.error('Build check failed:\n  ' + failures.join('\n  '));
   process.exit(1);
