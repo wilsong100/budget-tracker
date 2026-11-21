@@ -19,8 +19,8 @@ test('the offline file opens from disk with no network', async ({ page, context 
 
   await page.goto(OFFLINE_FILE);
 
-  await expect(page.getByRole('heading', { name: 'Budget planner' })).toBeVisible();
-  await expect(page.getByTestId('build-target')).toHaveText('Build: offline');
+  await expect(page.getByRole('button', { name: 'Set up my budget' })).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-build', 'offline');
   expect(requests).toEqual([]);
   expect(errors).toEqual([]);
 });
