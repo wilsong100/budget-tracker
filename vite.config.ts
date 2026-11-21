@@ -57,7 +57,9 @@ export default defineConfig(({ mode }): UserConfig => {
       coverage: {
         provider: 'v8',
         include: ['src/domain/**'],
-        exclude: ['src/**/*.test.ts'],
+        exclude: ['src/**/*.test.ts', 'src/domain/__fixtures__/**', 'src/domain/index.ts'],
+        // CLAUDE.md: src/domain is fully unit-tested.
+        thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },
       },
     },
   };
