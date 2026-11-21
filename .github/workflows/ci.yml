@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  e2e:
+    name: End-to-end (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Each engine also runs its mobile viewport: Android on Chromium, iPhone on WebKit.
+          - engine: chromium
+            projects: --project=chromium --project=android
+          - engine: firefox
+            projects: --project=firefox
+          - engine: webkit
+            projects: --project=webkit --project=iphone
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - run: npx playwright test ${{ matrix.projects }}
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.engine }}
+          path: playwright-report/
+          retention-days: 7

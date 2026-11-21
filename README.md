@@ -6,4 +6,4 @@ Local-first, UK-first "safe to spend" budget app for [All the Boring Stuff](http
 - Market research: [docs/research.md](docs/research.md)
 - Instructions for Claude Code: [CLAUDE.md](CLAUDE.md)
 
-Status: planning. Build starts at Phase 0 in the plan.
+Status: Phase 0 (scaffold) in progress. See the Commands section of CLAUDE.md for the npm scripts.
