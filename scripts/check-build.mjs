@@ -45,7 +45,10 @@ for (const dir of ['dist/web', 'dist/offline']) {
 for (const dir of ['dist/web', 'dist/offline']) {
   if (!existsSync(dir)) continue;
   for (const file of walk(dir)) {
-    if (/harness/i.test(file) || (/\.(js|html)$/.test(file) && readFileSync(file, 'utf8').includes('window.harness'))) {
+    if (
+      /harness/i.test(file) ||
+      (/\.(js|html)$/.test(file) && readFileSync(file, 'utf8').includes('window.harness'))
+    ) {
       fail(`${file} contains a test page`);
     }
   }
