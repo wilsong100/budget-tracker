@@ -1,8 +1,23 @@
 import { signal } from '@preact/signals';
 
 // Hash routes, so the same build works under /budget-planner/ and from a file on disk.
-export const ROUTES = ['today', 'spend', 'bills', 'pots', 'settings'] as const;
+export const ROUTES = [
+  'today',
+  'spend',
+  'bills',
+  'pots',
+  'settings',
+  'more',
+  'calendar',
+  'paydays',
+  'debt',
+  'review',
+] as const;
 export type Route = (typeof ROUTES)[number];
+
+/** Shown only with advanced options on (docs/PLAN.md, Phase 4), reached from the More tab. */
+export const ADVANCED_ROUTES: readonly Route[] = ['more', 'calendar', 'paydays', 'debt', 'review'];
+export const isAdvanced = (r: Route) => ADVANCED_ROUTES.includes(r);
 
 function read(): Route {
   const name = location.hash.replace(/^#\/?/, '');

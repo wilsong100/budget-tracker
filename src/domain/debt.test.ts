@@ -195,4 +195,16 @@ describe('interestSaved', () => {
   it('is null when the budget plan fails', () => {
     expect(interestSaved(debts, 1000, 'avalanche')).toBeNull();
   });
+
+  it('works with the user’s own order', () => {
+    const two: Debt[] = [
+      { id: 'X', name: 'Card', balance: 50000, aprBasisPoints: 2990, minimumPayment: 2000 },
+      { id: 'Y', name: 'Loan', balance: 80000, aprBasisPoints: 900, minimumPayment: 3000 },
+    ];
+    const saved = interestSaved(two, 10000, 'custom', { order: ['Y', 'X'] });
+    const minimumOnly = planDebts(two, 5000, 'custom', { order: ['Y', 'X'] });
+    const withBudget = planDebts(two, 10000, 'custom', { order: ['Y', 'X'] });
+    expect(saved).toBe(minimumOnly.totalInterest - withBudget.totalInterest);
+    expect(saved).toBeGreaterThan(0);
+  });
 });

@@ -1,7 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useId, useLayoutEffect, useRef } from 'preact/hooks';
-import { route, type Route } from './router';
-import { health, toast } from './state';
+import { formatMonth, shiftMonth, type MonthKey } from '../domain';
+import { isAdvanced, route, type Route } from './router';
+import { budget, health, toast } from './state';
 
 /** The storage health chip: always on screen (docs/PLAN.md, rule 3). */
 export function StatusChip() {
@@ -48,12 +49,16 @@ const TABS: [Route, string][] = [
 ];
 
 export function Tabs() {
+  const advanced = budget.value.prefs.mode === 'advanced';
+  const tabs: [Route, string][] = advanced ? [...TABS, ['more', 'More']] : TABS;
+  const here = route.value;
+  const current = (id: Route) => id === here || (id === 'more' && advanced && isAdvanced(here));
   return (
     <nav class="tabs" aria-label="Main">
       <ul>
-        {TABS.map(([id, name]) => (
+        {tabs.map(([id, name]) => (
           <li key={id}>
-            <a href={`#/${id}`} aria-current={route.value === id ? 'page' : undefined}>
+            <a href={`#/${id}`} aria-current={current(id) ? 'page' : undefined}>
               {name}
             </a>
           </li>
@@ -244,5 +249,42 @@ export function Empty({ children }: { children: ComponentChildren }) {
     <p class="empty" data-testid="empty">
       {children}
     </p>
+  );
+}
+
+/** Previous and next month buttons around the month's name, for Calendar and Month review. */
+export function MonthNav({
+  month,
+  onMonth,
+  latest,
+}: {
+  month: MonthKey;
+  onMonth: (month: MonthKey) => void;
+  /** No later month than this one, if given. */
+  latest?: MonthKey;
+}) {
+  const next = shiftMonth(month, 1);
+  const canGoOn = latest === undefined || next <= latest;
+  return (
+    <div class="month-nav">
+      <button
+        type="button"
+        class="btn btn-quiet btn-small"
+        aria-label="Previous month"
+        onClick={() => onMonth(shiftMonth(month, -1))}
+      >
+        <span aria-hidden="true">‹</span>
+      </button>
+      <h2 aria-live="polite">{formatMonth(month)}</h2>
+      <button
+        type="button"
+        class="btn btn-quiet btn-small"
+        aria-label="Next month"
+        disabled={!canGoOn}
+        onClick={() => onMonth(next)}
+      >
+        <span aria-hidden="true">›</span>
+      </button>
+    </div>
   );
 }

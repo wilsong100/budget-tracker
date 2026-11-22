@@ -8,6 +8,8 @@ import {
   REGIONS,
   type Anchor,
   type BudgetInput,
+  type Debt,
+  type Strategy,
   type BudgetItem,
   type IsoDate,
   type PayCycle,
@@ -18,7 +20,12 @@ import {
 import type { Json, StoredRecord } from '../storage';
 
 /** Fixed ids for the records there's only one of, so two devices update the same record. */
-export const IDS = { pay: 'pay', balance: 'balance', prefs: 'prefs' } as const;
+export const IDS = {
+  pay: 'pay',
+  balance: 'balance',
+  prefs: 'prefs',
+  debtPlan: 'debtPlan',
+} as const;
 
 export type Mode = 'simple' | 'advanced';
 export type Theme = 'system' | 'light' | 'dark';
@@ -69,7 +76,28 @@ export interface SpendData {
 
 export interface CategoryData {
   name: string;
+  /** What the user plans to spend in this category each month, for Month review. */
+  planned: Pence | null;
 }
+
+/** A credit card, loan or pay-later plan, for the Debt screen. */
+export interface DebtData {
+  name: string;
+  balance: Pence;
+  /** 24.9% APR is 2490. */
+  aprBasisPoints: number;
+  minimumPayment: Pence;
+}
+
+export interface DebtPlanData {
+  strategy: Strategy;
+  /** Paid towards all debts each month. */
+  monthly: Pence;
+  /** Debt ids, for the user's own order. */
+  order: string[];
+}
+
+export const DEFAULT_DEBT_PLAN: DebtPlanData = { strategy: 'avalanche', monthly: 0, order: [] };
 
 export const DEFAULT_PREFS: PrefsData = {
   mode: 'simple',
@@ -92,6 +120,8 @@ export interface Budget {
   pots: Row<PotData>[];
   spends: Row<SpendData>[];
   categories: Row<CategoryData>[];
+  debts: Row<DebtData>[];
+  debtPlan: DebtPlanData;
 }
 
 /** Our data types are plain JSON; this tells TypeScript so. */
@@ -218,7 +248,32 @@ function readSpend(v: unknown): SpendData | null {
 }
 
 function readCategory(v: unknown): CategoryData | null {
-  return isObj(v) && isText(v['name']) && v['name'].trim() !== '' ? { name: v['name'] } : null;
+  if (!isObj(v) || !isText(v['name']) || v['name'].trim() === '') return null;
+  const planned = isPence(v['planned']) && v['planned'] >= 0 ? v['planned'] : null;
+  return { name: v['name'], planned };
+}
+
+const isNonNegative = (v: unknown): v is Pence => isPence(v) && v >= 0;
+
+function readDebt(v: unknown): DebtData | null {
+  if (!isObj(v) || !isText(v['name']) || v['name'].trim() === '') return null;
+  const { balance, aprBasisPoints, minimumPayment } = v;
+  if (!isNonNegative(balance) || !isNonNegative(aprBasisPoints)) return null;
+  if (!isNonNegative(minimumPayment)) return null;
+  return { name: v['name'], balance, aprBasisPoints, minimumPayment };
+}
+
+function readDebtPlan(v: unknown): DebtPlanData {
+  if (!isObj(v)) return DEFAULT_DEBT_PLAN;
+  const strategies: Strategy[] = ['snowball', 'avalanche', 'custom'];
+  const order = v['order'];
+  return {
+    strategy: strategies.includes(v['strategy'] as Strategy)
+      ? (v['strategy'] as Strategy)
+      : DEFAULT_DEBT_PLAN.strategy,
+    monthly: isNonNegative(v['monthly']) ? v['monthly'] : 0,
+    order: Array.isArray(order) && order.every(isText) ? order : [],
+  };
 }
 
 function rows<T>(records: StoredRecord[], read: (v: unknown) => T | null): Row<T>[] {
@@ -243,6 +298,8 @@ export function readBudget(records: readonly StoredRecord[]): Budget {
     pots: rows(byType('pot'), readPot),
     spends: rows(byType('spend'), readSpend).sort((a, b) => b.data.at - a.data.at),
     categories: rows(byType('category'), readCategory),
+    debts: rows(byType('debt'), readDebt),
+    debtPlan: readDebtPlan(setting(IDS.debtPlan)),
   };
 }
 
@@ -285,4 +342,19 @@ export function budgetInput(
 export function splitKey(key: string): { id: string; date: IsoDate } {
   const at = key.lastIndexOf(':');
   return { id: key.slice(0, at), date: key.slice(at + 1) };
+}
+
+/** The domain layer's debts. */
+export function debtsOf(budget: Budget): Debt[] {
+  return budget.debts.map(({ id, data }) => ({ id, ...data }));
+}
+
+/**
+ * The user's own order, kept valid: debts since deleted drop out, repeats are ignored, and
+ * debts added since join the end.
+ */
+export function ownOrder(ids: readonly string[], order: readonly string[]): string[] {
+  const live = new Set(ids);
+  const kept = [...new Set(order)].filter((id) => live.has(id));
+  return [...kept, ...ids.filter((id) => !kept.includes(id))];
 }

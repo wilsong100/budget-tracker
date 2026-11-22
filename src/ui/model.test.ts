@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { StoredRecord } from '../storage';
-import { budgetInput, isSetUp, potItem, readBudget, splitKey } from './model';
+import {
+  budgetInput,
+  DEFAULT_DEBT_PLAN,
+  debtsOf,
+  isSetUp,
+  ownOrder,
+  potItem,
+  readBudget,
+  splitKey,
+} from './model';
 
 let n = 0;
 const rec = (type: StoredRecord['type'], data: unknown, id = `id-${n++}`, deleted: 0 | 1 = 0) =>
@@ -114,5 +123,68 @@ describe('budgetInput', () => {
 describe('splitKey', () => {
   it('splits on the last colon', () => {
     expect(splitKey('a:b:2026-11-21')).toEqual({ id: 'a:b', date: '2026-11-21' });
+  });
+});
+
+describe('debts', () => {
+  it('reads debts, skipping ones that don’t read cleanly', () => {
+    const budget = readBudget([
+      rec(
+        'debt',
+        { name: 'Card', balance: 120000, aprBasisPoints: 2490, minimumPayment: 3600 },
+        'c',
+      ),
+      rec(
+        'debt',
+        { name: 'Loan', balance: 500000, aprBasisPoints: 690, minimumPayment: 15000 },
+        'l',
+      ),
+      rec('debt', { name: 'Float', balance: 1.5, aprBasisPoints: 0, minimumPayment: 0 }),
+      rec('debt', { name: 'Negative', balance: -100, aprBasisPoints: 0, minimumPayment: 0 }),
+      rec('debt', { name: 'Bad APR', balance: 100, aprBasisPoints: 24.9, minimumPayment: 0 }),
+      rec('debt', { name: '', balance: 100, aprBasisPoints: 0, minimumPayment: 0 }),
+    ]);
+    expect(budget.debts.map((d) => d.data.name)).toEqual(['Card', 'Loan']);
+    expect(debtsOf(budget)).toEqual([
+      { id: 'c', name: 'Card', balance: 120000, aprBasisPoints: 2490, minimumPayment: 3600 },
+      { id: 'l', name: 'Loan', balance: 500000, aprBasisPoints: 690, minimumPayment: 15000 },
+    ]);
+  });
+
+  it('reads the debt plan, falling back to defaults', () => {
+    expect(readBudget([]).debtPlan).toEqual(DEFAULT_DEBT_PLAN);
+    const plan = rec(
+      'setting',
+      { strategy: 'custom', monthly: 30000, order: ['l', 'c'] },
+      'debtPlan',
+    );
+    expect(readBudget([plan]).debtPlan).toEqual({
+      strategy: 'custom',
+      monthly: 30000,
+      order: ['l', 'c'],
+    });
+    const bad = rec('setting', { strategy: 'yolo', monthly: -1, order: 'c' }, 'debtPlan');
+    expect(readBudget([bad]).debtPlan).toEqual(DEFAULT_DEBT_PLAN);
+  });
+
+  it('keeps the user’s own order valid as debts come and go', () => {
+    // Removed debts drop out; new ones join the end, in the order they were added.
+    expect(ownOrder(['a', 'b', 'c'], ['c', 'gone', 'a', 'c'])).toEqual(['c', 'a', 'b']);
+    expect(ownOrder([], ['a'])).toEqual([]);
+  });
+});
+
+describe('category plans', () => {
+  it('reads a planned monthly amount, or none', () => {
+    const budget = readBudget([
+      rec('category', { name: 'Groceries', planned: 30000 }, 'g'),
+      rec('category', { name: 'Fun' }, 'f'),
+      rec('category', { name: 'Odd', planned: -5 }, 'o'),
+    ]);
+    expect(budget.categories.map((c) => c.data)).toEqual([
+      { name: 'Groceries', planned: 30000 },
+      { name: 'Fun', planned: null },
+      { name: 'Odd', planned: null },
+    ]);
   });
 });
