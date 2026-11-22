@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   describePayCycle,
   describeRecurrence,
+  formatLongDate,
   formatMediumDate,
+  formatMonth,
   formatShortDate,
   ordinal,
   parseQuickSpend,
@@ -126,5 +128,21 @@ describe('suggestCategory', () => {
     expect(suggestCategory('cinema', history)).toBeNull();
     expect(suggestCategory('  ', history)).toBeNull();
     expect(suggestCategory('coffee', [])).toBeNull();
+  });
+});
+
+describe('formatMonth and formatLongDate', () => {
+  it('names a month in full', () => {
+    expect(formatMonth('2026-11')).toBe('November 2026');
+    expect(formatMonth('2027-01')).toBe('January 2027');
+  });
+
+  it('names a day in full, for screen readers', () => {
+    expect(formatLongDate('2026-11-23')).toBe('Monday 23 November');
+    expect(formatLongDate('2027-02-28')).toBe('Sunday 28 February');
+  });
+
+  it('refuses what isn’t a month', () => {
+    expect(() => formatMonth('2026-13')).toThrow(RangeError);
   });
 });

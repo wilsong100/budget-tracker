@@ -144,3 +144,19 @@ export function poundsText(pence: Pence | null): string {
   const part = Math.abs(pence) % 100;
   return part === 0 ? `${sign}${whole}` : `${sign}${whole}.${String(part).padStart(2, '0')}`;
 }
+
+/** An APR as typed ("24.9", "24.9%", "0") in basis points (2490), up to 2 decimal places. */
+export function aprFrom(text: string): number | null {
+  const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(text.trim().replace(/\s*%$/, ''));
+  if (!match) return null;
+  const points = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
+  return points <= 100_00 ? points : null;
+}
+
+/** Basis points back to the text a person would type: 2490 → "24.9". */
+export function aprText(points: number): string {
+  const whole = Math.trunc(points / 100);
+  const part = points % 100;
+  if (part === 0) return String(whole);
+  return `${whole}.${String(part).padStart(2, '0').replace(/0$/, '')}`;
+}

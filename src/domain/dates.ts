@@ -148,6 +148,20 @@ export function monthKey(date: IsoDate): MonthKey {
   return date.slice(0, 7);
 }
 
+/** The first day of a month key ("2026-11" → "2026-11-01"). Throws if it isn't a month. */
+export function monthStart(month: MonthKey): IsoDate {
+  if (!/^\d{4}-\d{2}$/.test(month) || !isIsoDate(`${month}-01`)) {
+    throw new RangeError(`not a month: ${month}`);
+  }
+  return `${month}-01`;
+}
+
+/** The last day of a month key. */
+export function monthEnd(month: MonthKey): IsoDate {
+  const { year, month: m } = parseIso(monthStart(month));
+  return dateInMonth(year, m, 'last');
+}
+
 /** Calendar months from a's month to b's month (b − a). */
 export function monthsBetween(a: IsoDate, b: IsoDate): number {
   const from = parseIso(a);

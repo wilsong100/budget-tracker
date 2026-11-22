@@ -5,6 +5,7 @@ import {
   formatPence,
   formatShortDate,
   occurrences,
+  type IsoDate,
 } from '../../domain';
 import { Band, Empty, Field, MoneyInput, TextInput, WhatsThis } from '../components';
 import {
@@ -98,10 +99,23 @@ export function Bills() {
   );
 }
 
-function BillEditor({ bill, onClose }: { bill: Row<BillData> | null; onClose: () => void }) {
+/** Adds or edits a bill. `on` starts a new bill on that date, from the calendar. */
+export function BillEditor({
+  bill,
+  on,
+  onClose,
+}: {
+  bill: Row<BillData> | null;
+  on?: IsoDate;
+  onClose: () => void;
+}) {
   const start = bill
     ? scheduleOf(bill.data.rule)
-    : { schedule: 'monthly' as BillSchedule, day: '', date: '' };
+    : {
+        schedule: 'monthly' as BillSchedule,
+        day: on ? String(Number(on.slice(8))) : '',
+        date: on ?? '',
+      };
   const [label, setLabel] = useState(bill?.data.label ?? '');
   const [amount, setAmount] = useState(poundsText(bill?.data.amount ?? null));
   const [schedule, setSchedule] = useState<BillSchedule>(start.schedule);
@@ -157,7 +171,7 @@ function BillEditor({ bill, onClose }: { bill: Row<BillData> | null; onClose: ()
     <main id="content">
       <Band
         title={bill ? `Edit ${bill.data.label}` : 'Add a bill'}
-        focusKey={bill ? `edit-${bill.id}` : 'new-bill'}
+        focusKey={bill ? `edit-${bill.id}` : `new-bill${on ? `-${on}` : ''}`}
       />
       <form class="wrap" onSubmit={submit} noValidate>
         <div class="panel">

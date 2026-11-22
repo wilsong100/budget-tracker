@@ -177,7 +177,11 @@ export function savePrefs(changes: Partial<PrefsData>): Promise<boolean> {
 export async function finishSetup(changes: Change[]): Promise<boolean> {
   const categories: Change[] = budget.value.categories.length
     ? []
-    : DEFAULT_CATEGORIES.map((c) => ({ type: 'category', id: c.id, data: { name: c.name } }));
+    : DEFAULT_CATEGORIES.map((c) => ({
+        type: 'category',
+        id: c.id,
+        data: { name: c.name, planned: null },
+      }));
   const ok = await save((s) => s.putMany([...changes, ...categories]));
   if (ok) {
     // The first backup reminder comes a week after setup, not straight away.

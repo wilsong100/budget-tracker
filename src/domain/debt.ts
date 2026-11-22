@@ -164,13 +164,15 @@ export function interestSaved(
   debts: readonly Debt[],
   monthlyBudget: Pence,
   strategy: Strategy,
+  options: { order?: readonly string[] } = {},
 ): Pence | null {
   const minimumOnly = planDebts(
     debts,
     debts.reduce((total, d) => total + d.minimumPayment, 0),
     strategy,
+    options,
   );
-  const withBudget = planDebts(debts, monthlyBudget, strategy);
+  const withBudget = planDebts(debts, monthlyBudget, strategy, options);
   if (minimumOnly.status !== 'ok' || withBudget.status !== 'ok') return null;
   return minimumOnly.totalInterest - withBudget.totalInterest;
 }

@@ -1,4 +1,4 @@
-import { dayOfWeek, parseIso, type IsoDate } from './dates';
+import { dayOfWeek, monthStart, parseIso, type IsoDate, type MonthKey } from './dates';
 import { parsePounds, type Pence } from './money';
 import type { PayCycle } from './paydays';
 import type { Recurrence } from './recurrence';
@@ -20,6 +20,42 @@ export function ordinal(n: number): string {
 export function formatShortDate(date: IsoDate): string {
   const { month, day } = parseIso(date);
   return `${WEEKDAYS[dayOfWeek(date) - 1]} ${day} ${MONTHS[month - 1]}`;
+}
+
+const LONG_WEEKDAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+const LONG_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/** "Monday 23 November", for screen readers. */
+export function formatLongDate(date: IsoDate): string {
+  const { month, day } = parseIso(date);
+  return `${LONG_WEEKDAYS[dayOfWeek(date) - 1]} ${day} ${LONG_MONTHS[month - 1]}`;
+}
+
+/** "November 2026" */
+export function formatMonth(month: MonthKey): string {
+  const { year, month: m } = parseIso(monthStart(month));
+  return `${LONG_MONTHS[m - 1]} ${year}`;
 }
 
 /** "27 Nov 2026" */

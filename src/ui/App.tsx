@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
 import { SiteBar, Tabs, Toast } from './components';
-import { route } from './router';
+import { isAdvanced, route } from './router';
 import { Bills } from './screens/Bills';
+import { Calendar } from './screens/Calendar';
+import { Debt } from './screens/Debt';
+import { More } from './screens/More';
+import { Paydays } from './screens/Paydays';
+import { Review } from './screens/Review';
 import { Missing } from './screens/Missing';
 import { Pots } from './screens/Pots';
 import { Settings } from './screens/Settings';
@@ -9,7 +14,7 @@ import { Setup } from './screens/Setup';
 import { Spend } from './screens/Spend';
 import { Today } from './screens/Today';
 import { Welcome } from './screens/Welcome';
-import { phase } from './state';
+import { budget, phase } from './state';
 
 export function App() {
   const [settingUp, setSettingUp] = useState(false);
@@ -43,19 +48,23 @@ export function App() {
   } else if (p === 'fresh') {
     screen = <Welcome onStart={() => setSettingUp(true)} />;
   } else {
+    // Advanced screens stay hidden in simple mode, even when opened by address.
     const r = route.value;
-    screen =
-      r === 'spend' ? (
-        <Spend />
-      ) : r === 'bills' ? (
-        <Bills />
-      ) : r === 'pots' ? (
-        <Pots />
-      ) : r === 'settings' ? (
-        <Settings />
-      ) : (
-        <Today />
-      );
+    const shown = isAdvanced(r) && budget.value.prefs.mode !== 'advanced' ? 'today' : r;
+    const screens = {
+      today: Today,
+      spend: Spend,
+      bills: Bills,
+      pots: Pots,
+      settings: Settings,
+      more: More,
+      calendar: Calendar,
+      paydays: Paydays,
+      debt: Debt,
+      review: Review,
+    };
+    const Screen = screens[shown];
+    screen = <Screen />;
   }
 
   return (

@@ -7,6 +7,8 @@ import {
   IDS,
   toJson,
   type BillData,
+  type DebtData,
+  type DebtPlanData,
   type PayData,
   type PotData,
   type SpendData,
@@ -78,6 +80,13 @@ export function exampleHousehold(today: IsoDate, now: number): Change[] {
       category: 'eating-out',
     },
   ];
+  const debts: DebtData[] = [
+    { name: 'Credit card', balance: 185000, aprBasisPoints: 2290, minimumPayment: 5500 },
+    { name: 'Car loan', balance: 420000, aprBasisPoints: 890, minimumPayment: 18000 },
+  ];
+  const debtPlan: DebtPlanData = { strategy: 'avalanche', monthly: 30000, order: [] };
+  /** Monthly plans for Month review. */
+  const planned: Record<string, number> = { groceries: 32000, 'eating-out': 8000, transport: 6000 };
   return [
     { type: 'payRule', id: IDS.pay, data: toJson(pay) },
     // Spends above are dated before the balance was set, so they're history, not taken off.
@@ -86,10 +95,12 @@ export function exampleHousehold(today: IsoDate, now: number): Change[] {
     ...DEFAULT_CATEGORIES.map((c): Change => ({
       type: 'category',
       id: c.id,
-      data: { name: c.name },
+      data: { name: c.name, planned: planned[c.id] ?? null },
     })),
     ...bills.map((b): Change => ({ type: 'bill', data: toJson(b) })),
     ...pots.map((p): Change => ({ type: 'pot', data: toJson(p) })),
     ...spends.map((s): Change => ({ type: 'spend', data: toJson(s) })),
+    ...debts.map((d): Change => ({ type: 'debt', data: toJson(d) })),
+    { type: 'setting', id: IDS.debtPlan, data: toJson(debtPlan) },
   ];
 }

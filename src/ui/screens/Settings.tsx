@@ -267,7 +267,7 @@ function CategoriesPanel() {
     e.preventDefault();
     if (name.trim() === '') return;
     if (
-      await save((s) => s.put('category', { name: name.trim() }), {
+      await save((s) => s.put('category', { name: name.trim(), planned: null }), {
         message: `${name.trim()} added.`,
       })
     )
@@ -275,7 +275,10 @@ function CategoriesPanel() {
   }
   async function rename(id: string, value: string) {
     if (value.trim() === '') return;
-    await save((s) => s.put('category', { name: value.trim() }, id));
+    const current = categories.find((c) => c.id === id);
+    if (!current) return;
+    // Keep the rest of the record, such as its monthly plan.
+    await save((s) => s.put('category', toJson({ ...current.data, name: value.trim() }), id));
   }
   return (
     <section class="panel" aria-labelledby="cat-h">
