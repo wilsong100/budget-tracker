@@ -1,3 +1,4 @@
+import type { Plugin } from 'vite';
 import { defineConfig, type ViteUserConfig as UserConfig } from 'vitest/config';
 import preact from '@preact/preset-vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
@@ -7,6 +8,31 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 //   offline  dist/offline/budget.html  one self-contained file for Etsy, no sync
 //   premium  dist/premium/premium.js   the sync module, served by the decision-tools Worker
 export const WEB_BASE = '/budget-planner/';
+
+/**
+ * The site's fonts (decision-tools DESIGN.md), loaded the same way as its other pages. Only the
+ * hosted app gets them: the offline file must make no network requests, so it uses system fonts.
+ */
+function siteFonts(): Plugin {
+  const href =
+    'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap';
+  return {
+    name: 'site-fonts',
+    transformIndexHtml: () => [
+      {
+        tag: 'link',
+        attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        injectTo: 'head',
+      },
+      {
+        tag: 'link',
+        attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        injectTo: 'head',
+      },
+      { tag: 'link', attrs: { rel: 'stylesheet', href }, injectTo: 'head' },
+    ],
+  };
+}
 
 export default defineConfig(({ mode }): UserConfig => {
   if (mode === 'premium') {
@@ -63,7 +89,7 @@ export default defineConfig(({ mode }): UserConfig => {
   // web, development and test
   return {
     base: WEB_BASE,
-    plugins: [preact()],
+    plugins: [preact(), siteFonts()],
     build: { outDir: 'dist/web', emptyOutDir: true },
     test: {
       include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],

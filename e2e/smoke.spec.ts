@@ -6,7 +6,7 @@ test('the web app loads under /budget-planner/', async ({ page }) => {
 
   await page.goto('./');
 
-  await expect(page.getByRole('heading', { name: 'Budget planner' })).toBeVisible();
-  await expect(page.getByTestId('build-target')).toHaveText('Build: web');
+  await expect(page.getByRole('button', { name: 'Set up my budget' })).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-build', 'web');
   expect(errors).toEqual([]);
 });
